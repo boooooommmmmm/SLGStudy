@@ -1,0 +1,106 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+public class SaveLoadList : MonoBehaviour {
+    private GameObject _Button;
+    List<GameObject> allButtons = new List<GameObject>();
+    
+    public void CreateSaveList()
+    {
+        allButtons.Clear();
+        var saves = Global.GetInstance().saves;
+
+        if(saves.Count < Global.GetInstance().maxSaveCount)
+        {
+            var newSave = new Save();
+            newSave.saveName = "新存档";
+            newSave.timeStamp = "";
+            newSave.ID = saves.Count;
+            CreateButton(newSave);
+        }
+        
+        foreach (var save in saves)
+        {
+            CreateButton(save);
+        }
+
+        GetComponent<RectTransform>().sizeDelta = new Vector2(GetComponent<RectTransform>().sizeDelta.x, allButtons[0].GetComponent<RectTransform>().sizeDelta.y * allButtons.Count +  5 *(allButtons.Count - 1));
+        
+        for (int i = 0; i < allButtons.Count; i++)
+        {
+            allButtons[i].GetComponent<Button>().onClick.AddListener(OnSaveButtonClick);
+            allButtons[i].transform.localPosition = new Vector3(0, -(int)(i * (allButtons[i].GetComponent<RectTransform>().sizeDelta.y + 5)), 0);
+        }
+    }
+
+    public void CreateLoadList()
+    {
+        allButtons.Clear();
+        var saves = Global.GetInstance().saves;
+
+        foreach (var save in saves)
+        {
+            CreateButton(save);
+        }
+
+        GetComponent<RectTransform>().sizeDelta = new Vector2(GetComponent<RectTransform>().sizeDelta.x, allButtons[0].GetComponent<RectTransform>().sizeDelta.y * allButtons.Count + 5 * (allButtons.Count - 1));
+
+        for (int i = 0; i < allButtons.Count; i++)
+        {
+            allButtons[i].GetComponent<Button>().onClick.AddListener(OnLoadButtonClick);
+            allButtons[i].transform.localPosition = new Vector3(0, -(int)(i * (allButtons[i].GetComponent<RectTransform>().sizeDelta.y + 5)), 0);
+        }
+    }
+
+    public void CreateButton(Save save)
+    {
+        _Button = (GameObject)Resources.Load("Prefabs/UI/SaveButton");
+        GameObject button = GameObject.Instantiate(_Button, transform);
+        button.name = Global.GetInstance().IndexToString(save.ID);
+        //button.GetComponentInChildren<Text>().alignment = TextAnchor.MiddleLeft;
+        //button.GetComponentInChildren<Text>().text = tempSkill.CName;
+        //button.GetComponentInChildren<Text>().resizeTextForBestFit = false;
+        //button.GetComponentInChildren<Text>().fontSize = 45;
+        //button.GetComponentInChildren<Text>().GetComponent<RectTransform>().sizeDelta = new Vector2(-30, 0);
+
+        button.transform.Find("SaveName").GetComponent<Text>().text = save.saveName;
+        if (save.timeStamp != "")
+            button.transform.Find("SaveTime").GetComponent<Text>().text = Global.GetInstance().StampToDateTime(save.timeStamp);
+        else
+            button.transform.Find("SaveTime").GetComponent<Text>().text = "";
+        //button.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 72);
+        button.GetComponent<RectTransform>().pivot = new Vector2(0f, 1f);
+        button.GetComponent<RectTransform>().anchorMin = new Vector2(0, 1);
+        button.GetComponent<RectTransform>().anchorMax = new Vector2(1, 1);
+        allButtons.Add(button);
+        transform.parent.parent.parent.gameObject.SetActive(true);
+    }
+
+    public void Clear()
+    {
+        for (int i = 0; i < allButtons.Count; i++)
+        {
+            Destroy(allButtons[i]);
+        }
+        allButtons.Clear();
+        transform.parent.parent.parent.gameObject.SetActive(false);
+    }
+
+    private void OnLoadButtonClick()
+    {
+        var btn = EventSystem.current.currentSelectedGameObject;
+        Global.GetInstance().Load(btn.name);
+        Clear();
+    }
+
+    private void OnSaveButtonClick()
+    {
+        var btn = EventSystem.current.currentSelectedGameObject;
+        Global.GetInstance().Save(btn.name);
+        Clear();
+    }
+}
